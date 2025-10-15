@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f8fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      padding: .5rem;
+    }
+    
+    .container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      width: 400px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    
+    h2 {
+      margin-bottom: 15px;
+    }
+    
+    textarea,
+    select,
+    button {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    
+    textarea {
+      width: 90%;
+    }
+    
+    #qrcode {
+      margin-top: 20px;
+    }
+    
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    
+    button:hover {
+      background: #1e4fd1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>QR Code Generator</h2>
+    <textarea id="qrText" rows="8" placeholder="Enter text or URL here..."></textarea>
+    <br />
+    <label for="styleSelect">Select QR Style:</label>
+    <select id="styleSelect">
+      <option value="rounded">Rounded</option>
+      <option value="dots">Dots</option>
+      <option value="inverted">Inverted</option>
+      <option value="gradient">Gradient</option>
+    </select>
+    
+    <button id="generateBtn">Generate QR Code</button>
+    
+    <div id="qrcode"></div>
+    
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    const qrText = document.getElementById("qrText");
+    const generateBtn = document.getElementById("generateBtn");
+    const qrcodeContainer = document.getElementById("qrcode");
+    const styleSelect = document.getElementById("styleSelect");
+    
+    // Create and hide download button
+    const downloadBtn = document.createElement("button");
+    downloadBtn.id = "downloadBtn";
+    downloadBtn.textContent = "Download QR Code";
+    downloadBtn.style.display = "none"; // hidden by default
+    downloadBtn.style.marginTop = "10px";
+    downloadBtn.style.background = "#10b981";
+    downloadBtn.style.color = "#fff";
+    downloadBtn.style.border = "none";
+    downloadBtn.style.padding = "10px 14px";
+    downloadBtn.style.borderRadius = "8px";
+    downloadBtn.style.cursor = "pointer";
+    qrcodeContainer.after(downloadBtn); // place after the QR container
+    
+    function generateQR() {
+      const text = qrText.value.trim();
+      if (!text) {
+        alert("Please enter text or URL!");
+        downloadBtn.style.display = "none";
+        return;
+      }
+      
+      qrcodeContainer.innerHTML = ""; // clear old QR
+      
+      // Generate basic QR
+      const qr = new QRCode(qrcodeContainer, {
+        text: text,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+      
+      // Apply style effects after short delay
+      setTimeout(() => {
+        const canvas = qrcodeContainer.querySelector("canvas");
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext("2d");
+        const style = styleSelect.value;
+        
+        if (style === "inverted") {
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imgData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            data[i] = 255 - data[i];
+            data[i + 1] = 255 - data[i + 1];
+            data[i + 2] = 255 - data[i + 2];
+          }
+          ctx.putImageData(imgData, 0, 0);
+        } else if (style === "gradient") {
+          const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+          gradient.addColorStop(0, "#2563eb");
+          gradient.addColorStop(1, "#16a34a");
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          ctx.globalCompositeOperation = "source-in";
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.globalCompositeOperation = "source-over";
+          ctx.putImageData(imgData, 0, 0);
+        }
+        
+        // ✅ Show download button only if QR is generated
+        downloadBtn.style.display = "inline-block";
+        
+      }, 100);
+    }
+    
+    function downloadQR() {
+      const canvas = qrcodeContainer.querySelector("canvas");
+      if (!canvas) {
+        alert("No QR code to download. Generate one first!");
+        return;
+      }
+      const link = document.createElement("a");
+      link.download = "qr-code.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+    
+    generateBtn.addEventListener("click", generateQR);
+    downloadBtn.addEventListener("click", downloadQR);
+  </script>
+</body>
+
+</html>
